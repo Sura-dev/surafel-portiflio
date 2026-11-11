@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { PORTFOLIO } from "@/data/portifolio";
 
 const NAV_LINKS = [
@@ -121,15 +121,6 @@ export default function Navbar() {
             );
           })}
         </div>
-
-        {/* DESKTOP CTA */}
-        <a
-          href={`mailto:${PORTFOLIO.email}`}
-          className="hidden items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500 md:inline-flex"
-        >
-          Let's Talk
-          <ArrowUpRight size={17} />
-        </a>
 
         {/* MOBILE MENU BUTTON */}
         <button
