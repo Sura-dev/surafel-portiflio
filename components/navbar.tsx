@@ -170,15 +170,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-
-            <a
-              href={`mailto:${PORTFOLIO.email}`}
-              onClick={closeMenu}
-              className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-violet-500"
-            >
-              Let's Talk
-              <ArrowUpRight size={18} />
-            </a>
           </div>
         </div>
       )}
