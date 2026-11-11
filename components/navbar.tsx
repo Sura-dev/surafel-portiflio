@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { PORTFOLIO } from "@/data/portifolio";
@@ -18,23 +18,54 @@ export default function Navbar() {
   const [activeSection, setActiveSection] = useState("home");
   const [scrolled, setScrolled] = useState(false);
 
+  const navigationTarget = useRef<string | null>(null);
+  const navigationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+
+      // Keep the clicked link highlighted during smooth scrolling.
+      if (navigationTarget.current) return;
+
+      const viewportHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollBottom = window.scrollY + viewportHeight;
+
+      // Contact is the final section before the footer.
+      if (scrollBottom >= documentHeight - 4) {
+        setActiveSection("contact");
+        return;
+      }
 
       const sections = NAV_LINKS.map((link) =>
         document.getElementById(link.href.slice(1)),
       ).filter((section): section is HTMLElement => section !== null);
 
-      let currentSection = "home";
+      // Choose the section occupying the most space in the
+      // central portion of the viewport.
+      const viewportTop = 80;
+      const viewportBottom = viewportHeight * 0.75;
+
+      let bestSection = "home";
+      let bestVisibility = -1;
 
       for (const section of sections) {
-        if (section.getBoundingClientRect().top <= 160) {
-          currentSection = section.id;
+        const rect = section.getBoundingClientRect();
+
+        const visibleTop = Math.max(rect.top, viewportTop);
+        const visibleBottom = Math.min(rect.bottom, viewportBottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+        if (visibleHeight > bestVisibility) {
+          bestVisibility = visibleHeight;
+          bestSection = section.id;
         }
       }
 
-      setActiveSection(currentSection);
+      if (bestVisibility > 0) {
+        setActiveSection(bestSection);
+      }
     };
 
     handleScroll();
@@ -43,8 +74,15 @@ export default function Navbar() {
       passive: true,
     });
 
+    window.addEventListener("resize", handleScroll);
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+
+      if (navigationTimeout.current) {
+        clearTimeout(navigationTimeout.current);
+      }
     };
   }, []);
 
@@ -74,6 +112,24 @@ export default function Navbar() {
 
   const closeMenu = () => setIsOpen(false);
 
+  const handleNavigation = (sectionId: string) => {
+    setActiveSection(sectionId);
+    closeMenu();
+
+    navigationTarget.current = sectionId;
+
+    if (navigationTimeout.current) {
+      clearTimeout(navigationTimeout.current);
+    }
+
+    // Allow smooth scrolling to finish before detecting
+    // the active section from viewport visibility again.
+    navigationTimeout.current = setTimeout(() => {
+      navigationTarget.current = null;
+      navigationTimeout.current = null;
+    }, 1000);
+  };
+
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
@@ -89,7 +145,7 @@ export default function Navbar() {
         {/* LOGO */}
         <Link
           href="/#home"
-          onClick={closeMenu}
+          onClick={() => handleNavigation("home")}
           className="text-2xl font-bold tracking-tight text-white"
         >
           {PORTFOLIO.name.split(" ")[0]}
@@ -99,12 +155,14 @@ export default function Navbar() {
         {/* DESKTOP LINKS */}
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => {
-            const isActive = activeSection === link.href.slice(1);
+            const sectionId = link.href.slice(1);
+            const isActive = activeSection === sectionId;
 
             return (
               <Link
                 key={link.href}
                 href={`/${link.href}`}
+                onClick={() => handleNavigation(sectionId)}
                 aria-current={isActive ? "location" : undefined}
                 className={`relative py-2 text-sm font-medium transition-colors ${
                   isActive
@@ -143,13 +201,14 @@ export default function Navbar() {
         >
           <div className="flex max-h-[calc(100dvh-5rem)] flex-col gap-2 overflow-y-auto px-6 py-6">
             {NAV_LINKS.map((link) => {
-              const isActive = activeSection === link.href.slice(1);
+              const sectionId = link.href.slice(1);
+              const isActive = activeSection === sectionId;
 
               return (
                 <Link
                   key={link.href}
                   href={`/${link.href}`}
-                  onClick={closeMenu}
+                  onClick={() => handleNavigation(sectionId)}
                   aria-current={isActive ? "location" : undefined}
                   className={`rounded-xl px-4 py-3 text-base font-medium transition-colors ${
                     isActive
